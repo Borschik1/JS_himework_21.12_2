@@ -157,7 +157,10 @@ function floatSub(first_num, second_num) {
     for (let i = 31; i >= 9; i--) {
         let remain = parseInt(first_num[i]) - parseInt(second_num[i]);
         mantiss = ((Math.abs(remain - add)) % 2).toString() + mantiss;
-        add = ((remain + add) >= 0) ? 0 : -1;
+        add = -1;
+		if ((remain + add) >= 0) {
+			add = 0;
+		}
     }
 
     if (fit == -1 || (fit == 0 && add == -1)) {
