@@ -46,10 +46,14 @@ function float_num(x) {
 			break;
 		}
 	}
-	mantiss = mantiss + "0".repeat(23 - mantiss.length);
+	if (23 - mantiss.length > 0) {
+		mantiss = mantiss + "0".repeat(23 - mantiss.length);
+	}
 	mantiss = mantiss.slice(0, 23);
 	return sBit + order + mantiss;
 }
+
+
 
 
 let fs = require('fs');
@@ -61,7 +65,7 @@ inputData = inputData.toString();
 for (i = 0; i < inputData.length; i++){
 	if (inputData[i] == '+'){
 		a = inputData.slice(0, i) * 1;
-		a_copy = a
+		a_copy = a;
 		b = inputData.slice(i + 1) * 1;
 		b_copy = b;
 		break;
@@ -115,16 +119,13 @@ float_b = float_num(b.toString());
 zbit_s = "";
 if (a_copy + b_copy >= 0){
 	zbit_s = "0";
-}else{
+} else {
 	zbit_s = "1";
 }
 order_s = "";
 mantiss_s = "";
 order_a = float_a.slice(1, 9);
 order_b = float_b.slice(1, 9);
-
-//console.log(order_a, order_b);
-
 
 mantiss_a = '1' + float_a.slice(9);
 mantiss_b = '1' + float_b.slice(9);
@@ -137,51 +138,40 @@ order_s = order_a;
 mantiss_a = "0".repeat(remained) + mantiss_a;
 mantiss_a = mantiss_a.slice(0, 24);
 
-//console.log(mantiss_a, mantiss_b);
-
-
 
 if (((sign_a == "+") && (sign_b == "-")) || ((sign_a == "-") && (sign_b == "+"))){
 	mantiss_s = parseInt(mantiss_b, 2) - parseInt(mantiss_a, 2);
-}
-if (((sign_a == "+") && (sign_b == "+")) || ((sign_a == "-") && (sign_b == "-"))){
+} else {
 	mantiss_s = parseInt(mantiss_a, 2) + parseInt(mantiss_b, 2);
 }
 
 mantiss_s = mantiss_s.toString(2);
 
-//console.log(mantiss_s);
 
-flag = 0;
 
 if (mantiss_s.length == 1){
 	zbit_s = "0";
 	order_s = "00000000";
 	mantiss_s = "00000000000000000000000";
-	flag = 1;
-}
-if (mantiss_s.length == 24){
+} else if (mantiss_s.length == 24) {
 	order_s = order_a;
 	mantiss_s = mantiss_s.slice(1);
-	flag = 1;
-}
-if (mantiss_s.length == 25){
+} else if (mantiss_s.length == 25) {
 	order_s = (parseInt(order_a, 2) + 1).toString(2);
 	mantiss_s = mantiss_s.slice(1, 24);
-	flag = 1;
-}
-if ((mantiss_s.length < 24) && (mantiss_s.length > 1) && (flag == 0)){
+} else if ((mantiss_s.length < 24) && (mantiss_s.length > 1)){
 	r = 24 - mantiss_s.length;
 	order_s = (parseInt(order_a, 2) - r).toString(2);
 	order_s = "0".repeat(8 - order_s.length) + order_s;
 	mantiss_s = mantiss_s.slice(1);
-	while (mantiss_s.length < 23){
-		mantiss_s = mantiss_s + '0';
+	if ((23 - mantiss_s.length) > 0) {
+		mantiss_s = mantiss_s + '0'.repeat(23 - mantiss_s.length);
 	}
 }
+mantiss_s = mantiss_s.slice(0, 24);
 
 
 
 console.log(zbit_s, order_s, mantiss_s);
 j = a_copy + b_copy;
-console.log(bin(j)[0], bin(j).slice(1, 9), bin(j).slice(9));
+console.log(float_num(j)[0], float_num(j).slice(1, 9), float_num(j).slice(9));
