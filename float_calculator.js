@@ -1,177 +1,196 @@
-function float_num(x) {
-	if (x[0] == '-'){
-		sBit = "1";
-	} else {
-		sBit = "0";
+function float_num(num) {
+    if (num == 0) {
+		return "0".repeat(32);
 	}
-	x = Math.abs(x);
-	s = x.toString(2);
-	if (x == 0) {
-		return sBit + "0000000000000000000000000000000";
+	let sign = 1;
+	if (num > 0) {
+		let sign = 0;
 	}
-	if (x > ((2 - Math.pow(2, -23)) * Math.pow(2, 127))){
-		return "01111111100000000000000000000000";
-	}
-	dotIndex = -1;
-	digit_after_dot = -1;
-	for (i = 0; i < s.length; i++){
-		if (s[i] == '.'){
-			dotIndex = i;
-			break;
-		}
-	}
-	for (i = dotIndex; i < s.length; i++){
-		if (s[i] == '1') {
-			digit_after_dot = i;
-			break;
-		}
-	}
-	order = "";
-	mantiss = "";
-	if (Math.abs(x) >= 1){
-		if (dotIndex == -1){
-			order = (s.length + 126).toString(2);
-		} else {
-			order = (dotIndex + 126).toString(2);
-		}
-		mantiss = s.slice(1);
-	} else {
-		order = (dotIndex - digit_after_dot + 127).toString(2);
-		mantiss = s.slice(digit_after_dot + 1);
-	}
-	order = "0".repeat(8 - order.length) + order;
-	for (i = 0; i < mantiss.length; i++){
-		if (mantiss[i] == '.'){
-			mantiss = mantiss.slice(0, i) + mantiss.slice(i + 1);
-			break;
-		}
-	}
-	if (23 - mantiss.length > 0) {
-		mantiss = mantiss + "0".repeat(23 - mantiss.length);
-	}
-	mantiss = mantiss.slice(0, 23);
-	return sBit + order + mantiss;
+    num = Math.abs(num);
+    let order = Math.floor(Math.log2(num));
+    num /=  Math.pow(2, order);
+    let m = num % 1;
+    let second = "";
+    for (let i = 0; i < 23; i++) {
+        m *= 2;
+        second += Math.floor(m);
+        m %= 1;
+    }
+    return sign + (127 + order).toString(2).padStart(8, "0") + second.padEnd(23, "0");
 }
 
+function bitSum(first_num, second_num) {
+    first_num = "1" + first_num;
+    second_num = "0" + second_num;
+    let result = "";
+    let add = "0";
+    for (let i = 23; i > -1; i--) {
+        let bit;
+        if (first_num[i] == "1" && second_num[i] == "1") {
+            if (add == "1") {
+                bit = "1";
+			} else {
+                bit = "0";
+                add = "1";
+            }
+		} else if (first_num[i] == "1" || second_num[i] == "1") {
+            if (add == "1") {
+                bit = "0"
+			} else {
+                bit = "1";
+			}
+		} else {
+            if (add == "1") {
+                bit = "1";
+                add = "0";
+            } else {
+                bit = "0";
+			}
+		}
+        result = bit + result;
+    }
+    if (result[0] == "0") {
+        return [result.slice(0, 23), add];
+	} else {
+        return [result.slice(1, 24), add];
+	}
+}
+
+function bitSum2(first_num, second_num) {
+    let result = "";
+    let add = "0";
+    for (let i = 22; i > -1; i--) {
+        let bit;
+        if (first_num[i] == "1" && second_num[i] == "1") {
+            if (add == "1") {
+                bit = "1";
+			}
+            else {
+                bit = "0";
+                add = "1";
+            }
+		} else if (first_num[i] == "1" || second_num[i] == "1") {
+            if (add == "1") {
+                bit = "0";
+			} else {
+                bit = "1";
+			}
+		} else {
+			if (add == "1") {
+				bit = "1";
+				add = "0";
+			} else {
+				bit = "0";
+			}
+		}
+        result = bit + result;
+		
+    }
+    return [result, add];
+}
+
+
+function floatSum(first_num, second_num) {
+    if (first_num == 0) {
+		return float_num(second_num);
+	}
+    if (second_num == 0) {
+		return float_num(first_num);
+	}
+    if (first_num < second_num) {
+        [second_num, first_num] = [first_num, second_num];
+    }
+    if (first_num < 0) {
+		return floatSub(second_num, -first_num);
+	}
+    let order1 = Math.floor(Math.log2(first_num));
+    let order2 = Math.floor(Math.log2(second_num));
+    let order_rem = Math.abs(order2 - order1);
+    let order = Math.max(order1, order2);
+    first_num = float_num(first_num);
+    second_num = float_num(second_num);
+    let mantiss_1 = first_num.slice(9, 32);
+    let mantiss_2 = second_num.slice(9, 32);
+    if (order2 == order1) {
+        let inter_answer = bitSum2(mantiss_1.padEnd(23, "0"), mantiss_2.padEnd(23, "0"));
+        return "0" + (127 + order + 1).toString(2).padStart(8, "0") + inter_answer[1] + inter_answer[0].slice(0, 22);
+    }
+
+    mantiss_2 = "0".repeat(order_rem - 1) + "1" + second_num.slice(9, 32 - order_rem);
+    mantiss_1 = first_num.slice(9, 32);
+    let inter_answer = bitSum(mantiss_1, mantiss_2);
+    let add = parseInt(inter_answer[1]);
+    return "0" + (127 + order + add).toString(2).padStart(8, "0") + inter_answer[0];
+}
+
+function floatSub(first_num, second_num) {
+    if (second_num == 0) {
+		return float_num(first_num);
+	}
+    if (first_num == 0) {
+		return float_num(-second_num);
+	}
+    if (first_num == second_num) {
+		return "0".repeat(32);
+	}
+
+    let sign = 1;
+	if (first_num > second_num) {
+		sign = 0;
+	}
+    if (first_num < second_num) {
+        [second_num, first_num] = [first_num, second_num];
+    }
+    let order1 = Math.floor(Math.log2(first_num));
+    let order2 = Math.floor(Math.log2(second_num));
+    first_num = float_num(first_num);
+    second_num = float_num(second_num);
+    let fit = -1;
+    let mantiss = '';
+    if (order1 !== order2) {
+        let order = order1 - order2
+        second_num = first_num.slice(0,9) + '0'.repeat(order - 1) + '1' + second_num.slice(9, 32 - order);
+        fit = 0;
+    }
+
+    let add = 0;
+    for (let i = 31; i >= 9; i--) {
+        let remain = parseInt(first_num[i]) - parseInt(second_num[i]);
+        mantiss = ((Math.abs(remain - add)) % 2).toString() + mantiss;
+        add = ((remain + add) >= 0) ? 0 : -1;
+    }
+
+    if (fit == -1 || (fit == 0 && add == -1)) {
+		let i = 0;
+        while (mantiss[i] == '0') {
+            fit--;
+			i++;
+        }
+        if (add == -1) {
+            i++;
+            fit--;
+        }
+        if (order1 == order2) {
+            i++;
+        }
+        mantiss = mantiss.slice(i, 31).padEnd(32, "0");
+
+    }
+    return sign + (parseInt(first_num.slice(1, 9), 2) + fit).toString(2).padStart(8, "0") + mantiss;
+}
 
 
 
 let fs = require('fs');
-let arg = process.argv;
 
-inputData = fs.readFileSync('operation.txt');
-inputData = inputData.toString();
+inputData = fs.readFileSync('operation.txt').toString();
+listData = inputData.split(" ");
+let first_num = parseFloat(listData[0]);
+let operation = listData[1];
+let second_num = parseFloat(listData[2]);
 
-for (i = 0; i < inputData.length; i++){
-	if (inputData[i] == '+'){
-		a = inputData.slice(0, i) * 1;
-		a_copy = a;
-		b = inputData.slice(i + 1) * 1;
-		b_copy = b;
-		break;
-	}
-	if ((inputData[i] == '-') && (i != 0)){
-		a = inputData.slice(0, i) * 1;
-		a_copy = a;
-		b = inputData.slice(i) * 1;
-		b_copy = b;												
-	}
-}
-
-
-a = Math.abs(a);
-b = Math.abs(b);
-if (a > b){
-	k = a;
-	a = b;
-	b = k;
-}
-sign_a = "";
-sign_b = "";
-if (a == Math.abs(a_copy)){
-	if (a_copy.toString()[0] == '-'){
-		sign_a = "-";
-	} else {
-		sign_a = "+";
-	}
-	if (b_copy.toString()[0] == '-'){
-		sign_b = "-";
-	} else {
-		sign_b = "+";
-	}
+if (operation == "+") {
+    console.log(floatSum(first_num, second_num));
 } else {
-	if (b_copy.toString()[0] == '-'){
-		sign_a = "-";
-	} else {
-		sign_a = "+";
-	}
-	if (a_copy.toString()[0] == '-'){
-		sign_b = "-";
-	} else {
-		sign_b = "+";
-	}
+    console.log(floatSub(first_num, second_num));
 }
-
-
-
-float_a = float_num(a.toString());
-float_b = float_num(b.toString());
-zbit_s = "";
-if (a_copy + b_copy >= 0){
-	zbit_s = "0";
-} else {
-	zbit_s = "1";
-}
-order_s = "";
-mantiss_s = "";
-order_a = float_a.slice(1, 9);
-order_b = float_b.slice(1, 9);
-
-mantiss_a = '1' + float_a.slice(9);
-mantiss_b = '1' + float_b.slice(9);
-
-
-
-remained = parseInt(order_b, 2) - parseInt(order_a, 2);
-order_a = order_b;
-order_s = order_a;
-mantiss_a = "0".repeat(remained) + mantiss_a;
-mantiss_a = mantiss_a.slice(0, 24);
-
-
-if (((sign_a == "+") && (sign_b == "-")) || ((sign_a == "-") && (sign_b == "+"))){
-	mantiss_s = parseInt(mantiss_b, 2) - parseInt(mantiss_a, 2);
-} else {
-	mantiss_s = parseInt(mantiss_a, 2) + parseInt(mantiss_b, 2);
-}
-
-mantiss_s = mantiss_s.toString(2);
-
-
-
-if (mantiss_s.length == 1){
-	zbit_s = "0";
-	order_s = "00000000";
-	mantiss_s = "00000000000000000000000";
-} else if (mantiss_s.length == 24) {
-	order_s = order_a;
-	mantiss_s = mantiss_s.slice(1);
-} else if (mantiss_s.length == 25) {
-	order_s = (parseInt(order_a, 2) + 1).toString(2);
-	mantiss_s = mantiss_s.slice(1, 24);
-} else if ((mantiss_s.length < 24) && (mantiss_s.length > 1)){
-	r = 24 - mantiss_s.length;
-	order_s = (parseInt(order_a, 2) - r).toString(2);
-	order_s = "0".repeat(8 - order_s.length) + order_s;
-	mantiss_s = mantiss_s.slice(1);
-	if ((23 - mantiss_s.length) > 0) {
-		mantiss_s = mantiss_s + '0'.repeat(23 - mantiss_s.length);
-	}
-}
-mantiss_s = mantiss_s.slice(0, 24);
-
-
-
-console.log(zbit_s, order_s, mantiss_s);
-j = a_copy + b_copy;
-console.log(float_num(j)[0], float_num(j).slice(1, 9), float_num(j).slice(9));
